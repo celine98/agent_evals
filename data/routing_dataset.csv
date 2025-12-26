@@ -1,0 +1,17 @@
+case_id,prompt,expected_agent
+operational_001,"I want to transfer $500 from my checking account to my savings account.",Operational
+operational_002,"Can you help me pay my credit card bill for $1,200?",Operational
+operational_003,"I need to update my mailing address on file to 123 Main Street, New York, NY 10001.",Operational
+operational_004,"Please set up automatic monthly transfers of $200 to my savings account.",Operational
+operational_005,"I'd like to order new checks for my checking account.",Operational
+informational_001,"What are your branch hours this week?",Informational
+informational_002,"What types of savings accounts do you offer and what are the interest rates?",Informational
+informational_003,"How do I apply for a mortgage? What documents will I need?",Informational
+informational_004,"What's the difference between a checking and savings account?",Informational
+informational_005,"Do you offer online banking and mobile app services?",Informational
+coach_001,"I want to create a budget to save for a house. Can you help me plan this?",FinancialCoach
+coach_002,"Can you help me understand how to invest in a retirement account?",FinancialCoach
+coach_003,"I'm trying to pay off debt. What strategy should I use to get out of credit card debt faster?",FinancialCoach
+coach_004,"I'm 25 years old and want to start saving for retirement. How much should I be putting away each month?",FinancialCoach
+coach_005,"I have extra money this month. Should I pay down my student loans or invest it?",FinancialCoach
+

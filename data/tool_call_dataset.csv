@@ -1,0 +1,11 @@
+case_id,prompt,expected_tool
+tool_001,"I want to transfer $500 from my checking account (account number 1234) to my savings account (account number 5678).",transfer_funds
+tool_002,"Can you help me transfer $1,000 from my savings account (account number 5678) to my checking account (account number 1234)?",transfer_funds
+tool_003,"Please move $250 from account 1234 to account 5678.",transfer_funds
+tool_004,"I need to pay my credit card bill for $1,200 to Chase Credit Card (account number 9876-5432-1098-7654).",pay_bill
+tool_005,"Can you help me pay $450 to Con Edison (account number ACC-123456)?",pay_bill
+tool_006,"Please pay $89.99 to Verizon Wireless (account number 555-123-4567).",pay_bill
+tool_007,"I need to update my mailing address to 123 Main Street, New York, NY 10001.",update_account_info
+tool_008,"Please update my phone number to 555-123-4567.",update_account_info
+tool_009,"I want to change my email address to newemail@example.com.",update_account_info
+
