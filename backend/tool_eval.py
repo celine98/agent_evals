@@ -11,13 +11,56 @@ Docs:
   Results / Tool calls: https://openai.github.io/openai-agents-python/results/
 """
 import asyncio
-from typing import List, Dict, Any
+import csv
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Any, Optional
 
 from agents import Runner, OpenAIConversationsSession
 
 from .agent_list import build_agents
 from data.dataset import TOOL_CALL_DATASET
 from .utils import get_conversation_id, extract_tool_calls
+
+
+def save_results_to_csv(results: List[Dict[str, Any]], output_dir: Optional[Path] = None) -> str:
+    """
+    Save tool call evaluation results to a CSV file.
+    
+    Args:
+        results: List of result dictionaries with 'message', 'target', and 'output' keys
+        output_dir: Directory to save the CSV file. If None, uses agent_evals/results directory.
+    
+    Returns:
+        Path to the saved CSV file
+    """
+    if output_dir is None:
+        # Get the agent_evals root directory (parent of backend)
+        agent_evals_root = Path(__file__).parent.parent
+        output_dir = agent_evals_root / "results"
+    
+    # Create output directory if it doesn't exist
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"tool_call_evals_{timestamp}.csv"
+    filepath = output_dir / filename
+    
+    # Write CSV file
+    with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['message', 'target', 'output']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        for result in results:
+            writer.writerow({
+                'message': result.get('message', ''),
+                'target': result.get('target', ''),
+                'output': result.get('output', ''),
+            })
+    
+    return str(filepath)
 
 
 async def run_tool_eval(model: str = "gpt-4.1-mini", verbose: bool = True) -> Dict[str, Any]:
@@ -102,6 +145,11 @@ async def run_tool_eval(model: str = "gpt-4.1-mini", verbose: bool = True) -> Di
     total = len(stored_runs)
     acc = correct / total if total else 0.0
     
+    # Save results to CSV
+    csv_path = save_results_to_csv(results)
+    if verbose:
+        print(f"\nResults saved to: {csv_path}")
+    
     if verbose:
         print(f"\nAccuracy: {correct}/{total} = {acc:.2%}")
         print("\nDone.")
@@ -112,6 +160,7 @@ async def run_tool_eval(model: str = "gpt-4.1-mini", verbose: bool = True) -> Di
         "correct": correct,
         "total": total,
         "results": results,
+        "csv_path": csv_path,
     }
 
 

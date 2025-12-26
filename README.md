@@ -7,7 +7,7 @@ A web UI for running and viewing agent evaluation results.
 - **Run Handoff Evaluations**: Test whether the orchestrator routes to the correct specialist agent
 - **Run Tool Call Evaluations**: Test whether the operational agent calls the correct tools
 - **View Results**: See overall accuracy and detailed test case results in a table format
-- **Export Results**: Handoff evaluation results are automatically saved to CSV files with timestamps
+- **Export Results**: Both handoff and tool call evaluation results are automatically saved to CSV files with timestamps
 
 ## Setup
 
@@ -58,16 +58,25 @@ http://127.0.0.1:5001
 
 ### Results Storage
 
-When you run handoff evaluations (either through the UI or command line), results are automatically saved to CSV files in the `results/` directory. Each evaluation run creates a new file with a timestamp:
+When you run evaluations (either through the UI or command line), results are automatically saved to CSV files in the `results/` directory. Each evaluation run creates a new file with a timestamp:
 
+#### Handoff Evaluations
 - **File naming**: `handoff_evals_YYYYMMDD_HHMMSS.csv`
-- **Location**: `agent_evals/results/`
 - **Columns**:
   - `message`: The input prompt/test case
   - `target`: Expected agent/routing target
   - `output`: Actual agent/routing result
+- **Example**: `handoff_evals_20251226_162216.csv`
 
-Example: `handoff_evals_20251226_162216.csv`
+#### Tool Call Evaluations
+- **File naming**: `tool_call_evals_YYYYMMDD_HHMMSS.csv`
+- **Columns**:
+  - `message`: The input prompt/test case
+  - `target`: Expected tool name
+  - `output`: Actual tool name that was called
+- **Example**: `tool_call_evals_20251226_162216.csv`
+
+**Location**: All CSV files are saved to `agent_evals/results/`
 
 This allows you to track evaluation results over time and compare performance across different runs.
 
@@ -89,7 +98,8 @@ agent_evals/
 │   ├── routing_dataset.csv
 │   └── tool_call_dataset.csv
 ├── results/                # Evaluation results (auto-generated)
-│   └── handoff_evals_*.csv # Timestamped CSV files with evaluation results
+│   ├── handoff_evals_*.csv # Timestamped CSV files with handoff evaluation results
+│   └── tool_call_evals_*.csv # Timestamped CSV files with tool call evaluation results
 └── frontend/               # Web UI
     ├── app.py             # Flask web application with API endpoints
     └── templates/
@@ -110,5 +120,9 @@ python -m backend.tool_eval
 
 Make sure you're in the `agent_evals` directory when running these commands.
 
-**Note**: When running handoff evaluations from the command line, results are automatically saved to `results/handoff_evals_[timestamp].csv`. The file path will be printed to the console when the evaluation completes.
+**Note**: When running evaluations from the command line, results are automatically saved to CSV files:
+- Handoff evaluations: `results/handoff_evals_[timestamp].csv`
+- Tool call evaluations: `results/tool_call_evals_[timestamp].csv`
+
+The file path will be printed to the console when each evaluation completes.
 
