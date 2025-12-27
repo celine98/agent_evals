@@ -1,8 +1,7 @@
 import json
-import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 def get_results_dir() -> Path:
@@ -31,20 +30,6 @@ def append_history(entry: Dict[str, Any]) -> None:
         json.dump(history, file, indent=2)
 
 
-def get_git_commit_hash() -> Optional[str]:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            check=True,
-            capture_output=True,
-            text=True,
-            cwd=Path(__file__).parent.parent,
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-
-
 def build_run_metadata(model: str, dataset: str, eval_type: str) -> Dict[str, Any]:
     timestamp = datetime.now().isoformat()
     return {
@@ -53,5 +38,4 @@ def build_run_metadata(model: str, dataset: str, eval_type: str) -> Dict[str, An
         "model": model,
         "dataset": dataset,
         "eval_type": eval_type,
-        "git_commit": get_git_commit_hash(),
     }

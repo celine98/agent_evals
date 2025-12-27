@@ -380,7 +380,7 @@
                                 <th>Model</th>
                                 <th>Accuracy</th>
                                 <th>Correct / Total</th>
-                                <th>Git Commit</th>
+                                <th>Run ID</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableBody"></tbody>
@@ -624,8 +624,8 @@
                 const countsCell = document.createElement('td');
                 countsCell.textContent = `${record.correct}/${record.total}`;
 
-                const gitCell = document.createElement('td');
-                gitCell.textContent = record.git_commit || '—';
+                const runIdCell = document.createElement('td');
+                runIdCell.textContent = record.run_id;
 
                 row.appendChild(selectCell);
                 row.appendChild(timestampCell);
@@ -634,7 +634,7 @@
                 row.appendChild(modelCell);
                 row.appendChild(accuracyCell);
                 row.appendChild(countsCell);
-                row.appendChild(gitCell);
+                row.appendChild(runIdCell);
                 tbody.appendChild(row);
             });
 
