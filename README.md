@@ -8,6 +8,7 @@ A web UI for running and viewing agent evaluation results.
 - **Run Tool Call Evaluations**: Test whether the operational agent calls the correct tools
 - **View Results**: See overall accuracy and detailed test case results in a table format
 - **Export Results**: Both handoff and tool call evaluation results are automatically saved to CSV files with timestamps
+- **Track Run History**: Every evaluation run appends metadata and accuracy metrics to a persistent history log
 
 ## Setup
 
@@ -80,6 +81,16 @@ When you run evaluations (either through the UI or command line), results are au
 
 This allows you to track evaluation results over time and compare performance across different runs.
 
+### History Tracking
+
+Each evaluation run also appends a record to `results/history.json`. The history log captures:
+
+- `run_id`, `timestamp`, `model`, `dataset`, and `eval_type`
+- Accuracy summary (`accuracy`, `correct`, `total`)
+- `csv_path` for the saved evaluation output
+
+The Web UI surfaces this data in the **History** section and pulls it from `GET /api/history`.
+
 ## Project Structure
 
 ```
@@ -99,7 +110,8 @@ agent_evals/
 │   └── tool_call_dataset.csv
 ├── results/                # Evaluation results (auto-generated)
 │   ├── handoff_evals_*.csv # Timestamped CSV files with handoff evaluation results
-│   └── tool_call_evals_*.csv # Timestamped CSV files with tool call evaluation results
+│   ├── tool_call_evals_*.csv # Timestamped CSV files with tool call evaluation results
+│   └── history.json        # Append-only run history metadata
 └── frontend/               # Web UI
     ├── app.py             # Flask web application with API endpoints
     └── templates/
@@ -125,4 +137,3 @@ Make sure you're in the `agent_evals` directory when running these commands.
 - Tool call evaluations: `results/tool_call_evals_[timestamp].csv`
 
 The file path will be printed to the console when each evaluation completes.
-
