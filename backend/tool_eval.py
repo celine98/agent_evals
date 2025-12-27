@@ -20,15 +20,21 @@ from agents import Runner, OpenAIConversationsSession
 
 from .agent_list import build_agents
 from data.dataset import TOOL_CALL_DATASET
+from .history import append_history, build_run_metadata
 from .utils import get_conversation_id, extract_tool_calls
 
 
-def save_results_to_csv(results: List[Dict[str, Any]], output_dir: Optional[Path] = None) -> str:
+def save_results_to_csv(
+    results: List[Dict[str, Any]],
+    metadata: Dict[str, Any],
+    output_dir: Optional[Path] = None,
+) -> str:
     """
     Save tool call evaluation results to a CSV file.
     
     Args:
         results: List of result dictionaries with 'message', 'target', and 'output' keys
+        metadata: Run metadata to include in the CSV rows
         output_dir: Directory to save the CSV file. If None, uses agent_evals/results directory.
     
     Returns:
@@ -49,12 +55,28 @@ def save_results_to_csv(results: List[Dict[str, Any]], output_dir: Optional[Path
     
     # Write CSV file
     with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['message', 'target', 'output']
+        fieldnames = [
+            'run_id',
+            'timestamp',
+            'model',
+            'dataset',
+            'eval_type',
+            'git_commit',
+            'message',
+            'target',
+            'output',
+        ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         
         writer.writeheader()
         for result in results:
             writer.writerow({
+                'run_id': metadata.get('run_id', ''),
+                'timestamp': metadata.get('timestamp', ''),
+                'model': metadata.get('model', ''),
+                'dataset': metadata.get('dataset', ''),
+                'eval_type': metadata.get('eval_type', ''),
+                'git_commit': metadata.get('git_commit', ''),
                 'message': result.get('message', ''),
                 'target': result.get('target', ''),
                 'output': result.get('output', ''),
@@ -72,6 +94,11 @@ async def run_tool_eval(model: str = "gpt-4.1-mini", verbose: bool = True) -> Di
     """
     # Get the operational agent directly (we'll use it without the orchestrator)
     _, operational_agent, _, _ = build_agents(model=model)
+    metadata = build_run_metadata(
+        model=model,
+        dataset="TOOL_CALL_DATASET",
+        eval_type="tool",
+    )
 
     # Phase 1: run dataset prompts, store each in OpenAI-hosted session
     stored_runs: List[Dict[str, Any]] = []
@@ -146,7 +173,15 @@ async def run_tool_eval(model: str = "gpt-4.1-mini", verbose: bool = True) -> Di
     acc = correct / total if total else 0.0
     
     # Save results to CSV
-    csv_path = save_results_to_csv(results)
+    csv_path = save_results_to_csv(results, metadata)
+    history_record = {
+        **metadata,
+        "accuracy": acc,
+        "correct": correct,
+        "total": total,
+        "csv_path": csv_path,
+    }
+    append_history(history_record)
     if verbose:
         print(f"\nResults saved to: {csv_path}")
     
@@ -161,9 +196,9 @@ async def run_tool_eval(model: str = "gpt-4.1-mini", verbose: bool = True) -> Di
         "total": total,
         "results": results,
         "csv_path": csv_path,
+        "metadata": metadata,
     }
 
 
 if __name__ == "__main__":
     asyncio.run(run_tool_eval())
-

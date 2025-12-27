@@ -212,6 +212,90 @@
             max-width: 400px;
             word-wrap: break-word;
         }
+
+        .history-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-header h2 {
+            font-size: 1.6em;
+            color: #333;
+        }
+
+        .history-table th,
+        .history-table td {
+            font-size: 0.95em;
+        }
+
+        .compare-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .compare-metric {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .compare-metric h4 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .compare-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .delta {
+            font-size: 0.95em;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .delta-positive {
+            color: #1e7e34;
+        }
+
+        .delta-negative {
+            color: #c82333;
+        }
+
+        .delta-neutral {
+            color: #6c757d;
+        }
+
+        .regression {
+            border-color: #f5c6cb;
+            background: #f8d7da;
+        }
+
+        .selection-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 </head>
 <body>
@@ -271,11 +355,45 @@
                 <div class="spinner"></div>
                 <div>Running evaluation...</div>
             </div>
+
+            <div class="history-section">
+                <div class="history-header">
+                    <h2>History</h2>
+                    <button class="btn btn-primary" id="refreshHistoryBtn" onclick="loadHistory()">
+                        Refresh History
+                    </button>
+                </div>
+
+                <div id="comparePanel" class="compare-panel" style="display: none;">
+                    <h3 style="margin-bottom: 15px; color: #333;">Run Comparison</h3>
+                    <div class="compare-grid" id="compareGrid"></div>
+                </div>
+
+                <div class="table-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>Timestamp</th>
+                                <th>Eval Type</th>
+                                <th>Dataset</th>
+                                <th>Model</th>
+                                <th>Accuracy</th>
+                                <th>Correct / Total</th>
+                                <th>Git Commit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         let currentEvalType = null;
+        let historyData = [];
+        let selectedRuns = [];
 
         function showLoading() {
             document.getElementById('loadingSection').style.display = 'block';
@@ -346,6 +464,197 @@
             document.getElementById('resultsSection').style.display = 'block';
         }
 
+        function formatAccuracy(value) {
+            if (value === null || value === undefined) {
+                return '—';
+            }
+            return (value * 100).toFixed(1) + '%';
+        }
+
+        function formatDelta(value) {
+            const percent = (value * 100).toFixed(1);
+            return (value > 0 ? '+' : '') + percent + '%';
+        }
+
+        function getDeltaClass(value) {
+            if (value > 0) {
+                return 'delta-positive';
+            }
+            if (value < 0) {
+                return 'delta-negative';
+            }
+            return 'delta-neutral';
+        }
+
+        function updateComparePanel() {
+            const panel = document.getElementById('comparePanel');
+            const grid = document.getElementById('compareGrid');
+            if (selectedRuns.length !== 2) {
+                panel.style.display = 'none';
+                grid.innerHTML = '';
+                return;
+            }
+
+            const [runA, runB] = selectedRuns;
+            const accuracyDelta = runB.accuracy - runA.accuracy;
+            const correctDelta = runB.correct - runA.correct;
+            const totalDelta = runB.total - runA.total;
+            const isRegression = accuracyDelta < 0;
+
+            const metrics = [
+                {
+                    label: 'Accuracy',
+                    value: `${formatAccuracy(runA.accuracy)} → ${formatAccuracy(runB.accuracy)}`,
+                    delta: formatDelta(accuracyDelta),
+                    deltaClass: getDeltaClass(accuracyDelta),
+                    regression: isRegression,
+                },
+                {
+                    label: 'Correct / Total',
+                    value: `${runA.correct}/${runA.total} → ${runB.correct}/${runB.total}`,
+                    delta: `${correctDelta > 0 ? '+' : ''}${correctDelta} / ${totalDelta > 0 ? '+' : ''}${totalDelta}`,
+                    deltaClass: getDeltaClass(correctDelta),
+                    regression: correctDelta < 0,
+                },
+                {
+                    label: 'Model',
+                    value: `${runA.model} → ${runB.model}`,
+                    delta: runA.model === runB.model ? 'No change' : 'Changed',
+                    deltaClass: runA.model === runB.model ? 'delta-neutral' : 'delta-positive',
+                    regression: false,
+                },
+                {
+                    label: 'Dataset',
+                    value: `${runA.dataset} → ${runB.dataset}`,
+                    delta: runA.dataset === runB.dataset ? 'No change' : 'Changed',
+                    deltaClass: runA.dataset === runB.dataset ? 'delta-neutral' : 'delta-positive',
+                    regression: false,
+                }
+            ];
+
+            grid.innerHTML = '';
+            metrics.forEach(metric => {
+                const card = document.createElement('div');
+                card.className = 'compare-metric' + (metric.regression ? ' regression' : '');
+                const title = document.createElement('h4');
+                title.textContent = metric.label;
+                const value = document.createElement('div');
+                value.className = 'compare-value';
+                value.textContent = metric.value;
+                const delta = document.createElement('div');
+                delta.className = `delta ${metric.deltaClass}`;
+                delta.textContent = metric.delta;
+                card.appendChild(title);
+                card.appendChild(value);
+                card.appendChild(delta);
+                grid.appendChild(card);
+            });
+
+            panel.style.display = 'block';
+        }
+
+        function handleRunSelection(runId) {
+            const run = historyData.find(item => item.run_id === runId);
+            if (!run) {
+                return;
+            }
+
+            const existingIndex = selectedRuns.findIndex(item => item.run_id === runId);
+            if (existingIndex >= 0) {
+                selectedRuns.splice(existingIndex, 1);
+            } else {
+                if (selectedRuns.length >= 2) {
+                    selectedRuns.shift();
+                }
+                selectedRuns.push(run);
+            }
+
+            const checkboxes = document.querySelectorAll('input[name="historySelect"]');
+            checkboxes.forEach(box => {
+                box.checked = selectedRuns.some(item => item.run_id === box.value);
+            });
+
+            updateComparePanel();
+        }
+
+        function displayHistory(history) {
+            historyData = history;
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            if (!history.length) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 8;
+                cell.textContent = 'No evaluation history yet. Run an evaluation to populate history.';
+                cell.style.textAlign = 'center';
+                cell.style.padding = '20px';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+
+            history.forEach(record => {
+                const row = document.createElement('tr');
+
+                const selectCell = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'historySelect';
+                checkbox.value = record.run_id;
+                checkbox.checked = selectedRuns.some(item => item.run_id === record.run_id);
+                checkbox.addEventListener('change', () => handleRunSelection(record.run_id));
+                selectCell.appendChild(checkbox);
+
+                const timestampCell = document.createElement('td');
+                timestampCell.textContent = record.timestamp;
+
+                const typeCell = document.createElement('td');
+                typeCell.textContent = record.eval_type;
+
+                const datasetCell = document.createElement('td');
+                datasetCell.textContent = record.dataset;
+
+                const modelCell = document.createElement('td');
+                modelCell.textContent = record.model;
+
+                const accuracyCell = document.createElement('td');
+                accuracyCell.textContent = formatAccuracy(record.accuracy);
+
+                const countsCell = document.createElement('td');
+                countsCell.textContent = `${record.correct}/${record.total}`;
+
+                const gitCell = document.createElement('td');
+                gitCell.textContent = record.git_commit || '—';
+
+                row.appendChild(selectCell);
+                row.appendChild(timestampCell);
+                row.appendChild(typeCell);
+                row.appendChild(datasetCell);
+                row.appendChild(modelCell);
+                row.appendChild(accuracyCell);
+                row.appendChild(countsCell);
+                row.appendChild(gitCell);
+                tbody.appendChild(row);
+            });
+
+            updateComparePanel();
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const result = await response.json();
+                if (result.success) {
+                    displayHistory(result.data);
+                } else {
+                    showError(result.error || 'Failed to load history');
+                }
+            } catch (error) {
+                showError(error.message || 'Network error occurred');
+            }
+        }
+
         async function runHandoffEval() {
             currentEvalType = 'handoff';
             showLoading();
@@ -364,6 +673,7 @@
 
                 if (result.success) {
                     displayResults(result.data);
+                    await loadHistory();
                 } else {
                     hideLoading();
                     showError(result.error || 'Failed to run handoff evaluation');
@@ -392,6 +702,7 @@
 
                 if (result.success) {
                     displayResults(result.data);
+                    await loadHistory();
                 } else {
                     hideLoading();
                     showError(result.error || 'Failed to run tool call evaluation');
@@ -401,7 +712,8 @@
                 showError(error.message || 'Network error occurred');
             }
         }
+
+        loadHistory();
     </script>
 </body>
 </html>
-
