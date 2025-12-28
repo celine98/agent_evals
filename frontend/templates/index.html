@@ -44,6 +44,45 @@
             font-size: 1.1em;
         }
 
+        .tab-bar {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: 1px solid #d0d4e4;
+            border-radius: 999px;
+            background: white;
+            color: #4a4f6b;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
         .content {
             padding: 40px;
         }
@@ -219,6 +258,24 @@
             border-top: 1px solid #e0e0e0;
         }
 
+        .examples-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .examples-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .examples-header h2 {
+            font-size: 1.6em;
+            color: #333;
+        }
+
         .history-header {
             display: flex;
             justify-content: space-between;
@@ -305,6 +362,28 @@
             <p>Run evaluations and view results for handoff and tool call tests</p>
         </div>
 
+        <div class="tab-bar">
+            <div class="tab-group" role="tablist" aria-label="Evaluation type">
+                <button class="tab-btn active" id="handoffTab" role="tab" onclick="setView({ evalType: 'handoff' })">
+                    Handoff
+                </button>
+                <button class="tab-btn" id="toolTab" role="tab" onclick="setView({ evalType: 'tool' })">
+                    Tool Call
+                </button>
+            </div>
+            <div class="tab-group" role="tablist" aria-label="View type">
+                <button class="tab-btn active" id="resultsTab" role="tab" onclick="setView({ section: 'results' })">
+                    Results
+                </button>
+                <button class="tab-btn" id="historyTab" role="tab" onclick="setView({ section: 'history' })">
+                    History
+                </button>
+                <button class="tab-btn" id="examplesTab" role="tab" onclick="setView({ section: 'examples' })">
+                    Examples
+                </button>
+            </div>
+        </div>
+
         <div class="content">
             <div class="controls">
                 <button class="btn btn-primary" id="runHandoffBtn" onclick="runHandoffEval()">
@@ -387,13 +466,123 @@
                     </table>
                 </div>
             </div>
+
+            <div class="examples-section" style="display: none;">
+                <div class="examples-header">
+                    <h2>Examples</h2>
+                    <button class="btn btn-primary" id="refreshExamplesBtn" onclick="loadExamples()">
+                        Refresh Examples
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="examples-table">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Prompt</th>
+                                <th>Expected</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examplesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         let currentEvalType = null;
+        let currentView = {
+            evalType: 'handoff',
+            section: 'results'
+        };
         let historyData = [];
         let selectedRuns = [];
+        let resultsByType = {
+            handoff: null,
+            tool: null
+        };
+        let examplesByType = {
+            handoff: null,
+            tool: null
+        };
+
+        function setView({ evalType, section }) {
+            const previousEvalType = currentView.evalType;
+
+            if (evalType) {
+                currentView.evalType = evalType;
+                currentEvalType = evalType;
+            }
+
+            if (section) {
+                currentView.section = section;
+            }
+
+            if (previousEvalType !== currentView.evalType) {
+                selectedRuns = [];
+            }
+
+            updateTabSelection();
+            updateSectionVisibility();
+            updateButtonsVisibility();
+            updateResultsDisplay();
+            renderHistory();
+
+            if (currentView.section === 'examples') {
+                loadExamples();
+            }
+        }
+
+        function updateTabSelection() {
+            document.getElementById('handoffTab').classList.toggle('active', currentView.evalType === 'handoff');
+            document.getElementById('toolTab').classList.toggle('active', currentView.evalType === 'tool');
+            document.getElementById('resultsTab').classList.toggle('active', currentView.section === 'results');
+            document.getElementById('historyTab').classList.toggle('active', currentView.section === 'history');
+            document.getElementById('examplesTab').classList.toggle('active', currentView.section === 'examples');
+        }
+
+        function updateSectionVisibility() {
+            const resultsSection = document.getElementById('resultsSection');
+            const historySection = document.querySelector('.history-section');
+            const examplesSection = document.querySelector('.examples-section');
+
+            if (currentView.section === 'history') {
+                historySection.style.display = 'block';
+                resultsSection.style.display = 'none';
+                examplesSection.style.display = 'none';
+                return;
+            }
+
+            if (currentView.section === 'examples') {
+                historySection.style.display = 'none';
+                resultsSection.style.display = 'none';
+                examplesSection.style.display = 'block';
+                return;
+            } else {
+                historySection.style.display = 'none';
+                examplesSection.style.display = 'none';
+                resultsSection.style.display = 'block';
+            }
+        }
+
+        function updateButtonsVisibility() {
+            const handoffBtn = document.getElementById('runHandoffBtn');
+            const toolBtn = document.getElementById('runToolBtn');
+            handoffBtn.style.display = currentView.evalType === 'handoff' ? 'block' : 'none';
+            toolBtn.style.display = currentView.evalType === 'tool' ? 'block' : 'none';
+        }
+
+        function updateResultsDisplay() {
+            const storedResults = resultsByType[currentView.evalType];
+            if (storedResults) {
+                displayResults(storedResults, { persist: false });
+                return;
+            }
+
+            document.getElementById('resultsSection').style.display = 'none';
+        }
 
         function showLoading() {
             document.getElementById('loadingSection').style.display = 'block';
@@ -420,9 +609,13 @@
             document.getElementById('errorMessage').style.display = 'none';
         }
 
-        function displayResults(data) {
+        function displayResults(data, options = { persist: true }) {
             hideLoading();
             hideError();
+
+            if (options.persist) {
+                resultsByType[currentEvalType] = data;
+            }
 
             // Update accuracy and stats
             const accuracy = (data.accuracy * 100).toFixed(1);
@@ -462,6 +655,10 @@
             });
 
             document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function getFilteredHistory() {
+            return historyData.filter(record => record.eval_type === currentView.evalType);
         }
 
         function formatAccuracy(value) {
@@ -579,14 +776,20 @@
 
         function displayHistory(history) {
             historyData = history;
+            renderHistory();
+        }
+
+        function renderHistory() {
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
 
-            if (!history.length) {
+            const filteredHistory = getFilteredHistory();
+
+            if (!filteredHistory.length) {
                 const row = document.createElement('tr');
                 const cell = document.createElement('td');
                 cell.colSpan = 8;
-                cell.textContent = 'No evaluation history yet. Run an evaluation to populate history.';
+                cell.textContent = `No ${currentView.evalType} evaluation history yet. Run an evaluation to populate history.`;
                 cell.style.textAlign = 'center';
                 cell.style.padding = '20px';
                 row.appendChild(cell);
@@ -594,7 +797,7 @@
                 return;
             }
 
-            history.forEach(record => {
+            filteredHistory.forEach(record => {
                 const row = document.createElement('tr');
 
                 const selectCell = document.createElement('td');
@@ -655,6 +858,63 @@
             }
         }
 
+        function displayExamples(examples) {
+            const tbody = document.getElementById('examplesTableBody');
+            tbody.innerHTML = '';
+
+            if (!examples.length) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 3;
+                cell.textContent = `No ${currentView.evalType} examples available.`;
+                cell.style.textAlign = 'center';
+                cell.style.padding = '20px';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+
+            examples.forEach(example => {
+                const row = document.createElement('tr');
+
+                const idCell = document.createElement('td');
+                idCell.textContent = example.case_id;
+
+                const promptCell = document.createElement('td');
+                promptCell.className = 'message-cell';
+                promptCell.textContent = example.prompt;
+
+                const expectedCell = document.createElement('td');
+                expectedCell.textContent = example.expected;
+
+                row.appendChild(idCell);
+                row.appendChild(promptCell);
+                row.appendChild(expectedCell);
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadExamples() {
+            const cachedExamples = examplesByType[currentView.evalType];
+            if (cachedExamples) {
+                displayExamples(cachedExamples);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/examples?eval_type=${currentView.evalType}`);
+                const result = await response.json();
+                if (result.success) {
+                    examplesByType[currentView.evalType] = result.data;
+                    displayExamples(result.data);
+                } else {
+                    showError(result.error || 'Failed to load examples');
+                }
+            } catch (error) {
+                showError(error.message || 'Network error occurred');
+            }
+        }
+
         async function runHandoffEval() {
             currentEvalType = 'handoff';
             showLoading();
@@ -673,6 +933,7 @@
 
                 if (result.success) {
                     displayResults(result.data);
+                    setView({ evalType: 'handoff', section: 'results' });
                     await loadHistory();
                 } else {
                     hideLoading();
@@ -702,6 +963,7 @@
 
                 if (result.success) {
                     displayResults(result.data);
+                    setView({ evalType: 'tool', section: 'results' });
                     await loadHistory();
                 } else {
                     hideLoading();
@@ -713,6 +975,7 @@
             }
         }
 
+        setView({ evalType: 'handoff', section: 'results' });
         loadHistory();
     </script>
 </body>
