@@ -83,6 +83,22 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
         }
 
+        .tab-btn.primary-tab {
+            padding: 12px 22px;
+            font-size: 1.05em;
+            border-width: 2px;
+        }
+
+        .tab-btn.primary-tab.active {
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
+        }
+
+        .tab-group.secondary-tabs .tab-btn {
+            padding: 8px 14px;
+            font-size: 0.95em;
+            border-radius: 16px;
+        }
+
         .content {
             padding: 40px;
         }
@@ -364,14 +380,14 @@
 
         <div class="tab-bar">
             <div class="tab-group" role="tablist" aria-label="Evaluation type">
-                <button class="tab-btn active" id="handoffTab" role="tab" onclick="setView({ evalType: 'handoff' })">
+                <button class="tab-btn primary-tab active" id="handoffTab" role="tab" onclick="setView({ evalType: 'handoff' })">
                     Handoff
                 </button>
-                <button class="tab-btn" id="toolTab" role="tab" onclick="setView({ evalType: 'tool' })">
+                <button class="tab-btn primary-tab" id="toolTab" role="tab" onclick="setView({ evalType: 'tool' })">
                     Tool Call
                 </button>
             </div>
-            <div class="tab-group" role="tablist" aria-label="View type">
+            <div class="tab-group secondary-tabs" role="tablist" aria-label="View type">
                 <button class="tab-btn active" id="resultsTab" role="tab" onclick="setView({ section: 'results' })">
                     Results
                 </button>
