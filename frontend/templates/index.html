@@ -44,6 +44,74 @@
             font-size: 1.1em;
         }
 
+        .tab-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .primary-tabs {
+            width: 100%;
+        }
+
+        .primary-tabs .tab-btn {
+            flex: 1;
+            width: 100%;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: 1px solid #d0d4e4;
+            border-radius: 999px;
+            background: white;
+            color: #4a4f6b;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
+        .tab-btn.primary-tab {
+            padding: 12px 22px;
+            font-size: 1.05em;
+            border-width: 2px;
+        }
+
+        .tab-btn.primary-tab.active {
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
+        }
+
+        .tab-group.secondary-tabs .tab-btn {
+            padding: 8px 14px;
+            font-size: 0.95em;
+            border-radius: 16px;
+        }
+
+        .secondary-tabs {
+            width: fit-content;
+            justify-content: flex-start;
+        }
+
         .content {
             padding: 40px;
         }
@@ -212,6 +280,108 @@
             max-width: 400px;
             word-wrap: break-word;
         }
+
+        .history-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .examples-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .examples-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .examples-header h2 {
+            font-size: 1.6em;
+            color: #333;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-header h2 {
+            font-size: 1.6em;
+            color: #333;
+        }
+
+        .history-table th,
+        .history-table td {
+            font-size: 0.95em;
+        }
+
+        .compare-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .compare-metric {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .compare-metric h4 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .compare-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .delta {
+            font-size: 0.95em;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .delta-positive {
+            color: #1e7e34;
+        }
+
+        .delta-negative {
+            color: #c82333;
+        }
+
+        .delta-neutral {
+            color: #6c757d;
+        }
+
+        .regression {
+            border-color: #f5c6cb;
+            background: #f8d7da;
+        }
+
+        .selection-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 </head>
 <body>
@@ -219,6 +389,28 @@
         <div class="header">
             <h1>🤖 Agent Evaluation Dashboard</h1>
             <p>Run evaluations and view results for handoff and tool call tests</p>
+        </div>
+
+        <div class="tab-bar">
+            <div class="tab-group primary-tabs" role="tablist" aria-label="Evaluation type">
+                <button class="tab-btn primary-tab active" id="handoffTab" role="tab" onclick="setView({ evalType: 'handoff' })">
+                    Handoff
+                </button>
+                <button class="tab-btn primary-tab" id="toolTab" role="tab" onclick="setView({ evalType: 'tool' })">
+                    Tool Call
+                </button>
+            </div>
+            <div class="tab-group secondary-tabs" role="tablist" aria-label="View type">
+                <button class="tab-btn active" id="resultsTab" role="tab" onclick="setView({ section: 'results' })">
+                    Results
+                </button>
+                <button class="tab-btn" id="historyTab" role="tab" onclick="setView({ section: 'history' })">
+                    History
+                </button>
+                <button class="tab-btn" id="examplesTab" role="tab" onclick="setView({ section: 'examples' })">
+                    Examples
+                </button>
+            </div>
         </div>
 
         <div class="content">
@@ -271,11 +463,155 @@
                 <div class="spinner"></div>
                 <div>Running evaluation...</div>
             </div>
+
+            <div class="history-section">
+                <div class="history-header">
+                    <h2>History</h2>
+                    <button class="btn btn-primary" id="refreshHistoryBtn" onclick="loadHistory()">
+                        Refresh History
+                    </button>
+                </div>
+
+                <div id="comparePanel" class="compare-panel" style="display: none;">
+                    <h3 style="margin-bottom: 15px; color: #333;">Run Comparison</h3>
+                    <div class="compare-grid" id="compareGrid"></div>
+                </div>
+
+                <div class="table-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>Timestamp</th>
+                                <th>Eval Type</th>
+                                <th>Dataset</th>
+                                <th>Model</th>
+                                <th>Accuracy</th>
+                                <th>Correct / Total</th>
+                                <th>Run ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="examples-section" style="display: none;">
+                <div class="examples-header">
+                    <h2>Examples</h2>
+                    <button class="btn btn-primary" id="refreshExamplesBtn" onclick="loadExamples()">
+                        Refresh Examples
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="examples-table">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Prompt</th>
+                                <th>Expected</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examplesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         let currentEvalType = null;
+        let currentView = {
+            evalType: 'handoff',
+            section: 'results'
+        };
+        let historyData = [];
+        let selectedRuns = [];
+        let resultsByType = {
+            handoff: null,
+            tool: null
+        };
+        let examplesByType = {
+            handoff: null,
+            tool: null
+        };
+
+        function setView({ evalType, section }) {
+            const previousEvalType = currentView.evalType;
+
+            if (evalType) {
+                currentView.evalType = evalType;
+                currentEvalType = evalType;
+            }
+
+            if (section) {
+                currentView.section = section;
+            }
+
+            if (previousEvalType !== currentView.evalType) {
+                selectedRuns = [];
+            }
+
+            updateTabSelection();
+            updateSectionVisibility();
+            updateButtonsVisibility();
+            updateResultsDisplay();
+            renderHistory();
+
+            if (currentView.section === 'examples') {
+                loadExamples();
+            }
+        }
+
+        function updateTabSelection() {
+            document.getElementById('handoffTab').classList.toggle('active', currentView.evalType === 'handoff');
+            document.getElementById('toolTab').classList.toggle('active', currentView.evalType === 'tool');
+            document.getElementById('resultsTab').classList.toggle('active', currentView.section === 'results');
+            document.getElementById('historyTab').classList.toggle('active', currentView.section === 'history');
+            document.getElementById('examplesTab').classList.toggle('active', currentView.section === 'examples');
+        }
+
+        function updateSectionVisibility() {
+            const resultsSection = document.getElementById('resultsSection');
+            const historySection = document.querySelector('.history-section');
+            const examplesSection = document.querySelector('.examples-section');
+
+            if (currentView.section === 'history') {
+                historySection.style.display = 'block';
+                resultsSection.style.display = 'none';
+                examplesSection.style.display = 'none';
+                return;
+            }
+
+            if (currentView.section === 'examples') {
+                historySection.style.display = 'none';
+                resultsSection.style.display = 'none';
+                examplesSection.style.display = 'block';
+                return;
+            } else {
+                historySection.style.display = 'none';
+                examplesSection.style.display = 'none';
+                resultsSection.style.display = 'block';
+            }
+        }
+
+        function updateButtonsVisibility() {
+            const handoffBtn = document.getElementById('runHandoffBtn');
+            const toolBtn = document.getElementById('runToolBtn');
+            handoffBtn.style.display = currentView.evalType === 'handoff' ? 'block' : 'none';
+            toolBtn.style.display = currentView.evalType === 'tool' ? 'block' : 'none';
+        }
+
+        function updateResultsDisplay() {
+            const storedResults = resultsByType[currentView.evalType];
+            if (storedResults) {
+                displayResults(storedResults, { persist: false });
+                return;
+            }
+
+            document.getElementById('resultsSection').style.display = 'none';
+        }
 
         function showLoading() {
             document.getElementById('loadingSection').style.display = 'block';
@@ -302,9 +638,13 @@
             document.getElementById('errorMessage').style.display = 'none';
         }
 
-        function displayResults(data) {
+        function displayResults(data, options = { persist: true }) {
             hideLoading();
             hideError();
+
+            if (options.persist) {
+                resultsByType[currentEvalType] = data;
+            }
 
             // Update accuracy and stats
             const accuracy = (data.accuracy * 100).toFixed(1);
@@ -346,6 +686,264 @@
             document.getElementById('resultsSection').style.display = 'block';
         }
 
+        function getFilteredHistory() {
+            return historyData.filter(record => record.eval_type === currentView.evalType);
+        }
+
+        function formatAccuracy(value) {
+            if (value === null || value === undefined) {
+                return '—';
+            }
+            return (value * 100).toFixed(1) + '%';
+        }
+
+        function formatDelta(value) {
+            const percent = (value * 100).toFixed(1);
+            return (value > 0 ? '+' : '') + percent + '%';
+        }
+
+        function getDeltaClass(value) {
+            if (value > 0) {
+                return 'delta-positive';
+            }
+            if (value < 0) {
+                return 'delta-negative';
+            }
+            return 'delta-neutral';
+        }
+
+        function updateComparePanel() {
+            const panel = document.getElementById('comparePanel');
+            const grid = document.getElementById('compareGrid');
+            if (selectedRuns.length !== 2) {
+                panel.style.display = 'none';
+                grid.innerHTML = '';
+                return;
+            }
+
+            const [runA, runB] = selectedRuns;
+            const accuracyDelta = runB.accuracy - runA.accuracy;
+            const correctDelta = runB.correct - runA.correct;
+            const totalDelta = runB.total - runA.total;
+            const isRegression = accuracyDelta < 0;
+
+            const metrics = [
+                {
+                    label: 'Accuracy',
+                    value: `${formatAccuracy(runA.accuracy)} → ${formatAccuracy(runB.accuracy)}`,
+                    delta: formatDelta(accuracyDelta),
+                    deltaClass: getDeltaClass(accuracyDelta),
+                    regression: isRegression,
+                },
+                {
+                    label: 'Correct / Total',
+                    value: `${runA.correct}/${runA.total} → ${runB.correct}/${runB.total}`,
+                    delta: `${correctDelta > 0 ? '+' : ''}${correctDelta} / ${totalDelta > 0 ? '+' : ''}${totalDelta}`,
+                    deltaClass: getDeltaClass(correctDelta),
+                    regression: correctDelta < 0,
+                },
+                {
+                    label: 'Model',
+                    value: `${runA.model} → ${runB.model}`,
+                    delta: runA.model === runB.model ? 'No change' : 'Changed',
+                    deltaClass: runA.model === runB.model ? 'delta-neutral' : 'delta-positive',
+                    regression: false,
+                },
+                {
+                    label: 'Dataset',
+                    value: `${runA.dataset} → ${runB.dataset}`,
+                    delta: runA.dataset === runB.dataset ? 'No change' : 'Changed',
+                    deltaClass: runA.dataset === runB.dataset ? 'delta-neutral' : 'delta-positive',
+                    regression: false,
+                }
+            ];
+
+            grid.innerHTML = '';
+            metrics.forEach(metric => {
+                const card = document.createElement('div');
+                card.className = 'compare-metric' + (metric.regression ? ' regression' : '');
+                const title = document.createElement('h4');
+                title.textContent = metric.label;
+                const value = document.createElement('div');
+                value.className = 'compare-value';
+                value.textContent = metric.value;
+                const delta = document.createElement('div');
+                delta.className = `delta ${metric.deltaClass}`;
+                delta.textContent = metric.delta;
+                card.appendChild(title);
+                card.appendChild(value);
+                card.appendChild(delta);
+                grid.appendChild(card);
+            });
+
+            panel.style.display = 'block';
+        }
+
+        function handleRunSelection(runId) {
+            const run = historyData.find(item => item.run_id === runId);
+            if (!run) {
+                return;
+            }
+
+            const existingIndex = selectedRuns.findIndex(item => item.run_id === runId);
+            if (existingIndex >= 0) {
+                selectedRuns.splice(existingIndex, 1);
+            } else {
+                if (selectedRuns.length >= 2) {
+                    selectedRuns.shift();
+                }
+                selectedRuns.push(run);
+            }
+
+            const checkboxes = document.querySelectorAll('input[name="historySelect"]');
+            checkboxes.forEach(box => {
+                box.checked = selectedRuns.some(item => item.run_id === box.value);
+            });
+
+            updateComparePanel();
+        }
+
+        function displayHistory(history) {
+            historyData = history;
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            const filteredHistory = getFilteredHistory();
+
+            if (!filteredHistory.length) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 8;
+                cell.textContent = `No ${currentView.evalType} evaluation history yet. Run an evaluation to populate history.`;
+                cell.style.textAlign = 'center';
+                cell.style.padding = '20px';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+
+            filteredHistory.forEach(record => {
+                const row = document.createElement('tr');
+
+                const selectCell = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'historySelect';
+                checkbox.value = record.run_id;
+                checkbox.checked = selectedRuns.some(item => item.run_id === record.run_id);
+                checkbox.addEventListener('change', () => handleRunSelection(record.run_id));
+                selectCell.appendChild(checkbox);
+
+                const timestampCell = document.createElement('td');
+                timestampCell.textContent = record.timestamp;
+
+                const typeCell = document.createElement('td');
+                typeCell.textContent = record.eval_type;
+
+                const datasetCell = document.createElement('td');
+                datasetCell.textContent = record.dataset;
+
+                const modelCell = document.createElement('td');
+                modelCell.textContent = record.model;
+
+                const accuracyCell = document.createElement('td');
+                accuracyCell.textContent = formatAccuracy(record.accuracy);
+
+                const countsCell = document.createElement('td');
+                countsCell.textContent = `${record.correct}/${record.total}`;
+
+                const runIdCell = document.createElement('td');
+                runIdCell.textContent = record.run_id;
+
+                row.appendChild(selectCell);
+                row.appendChild(timestampCell);
+                row.appendChild(typeCell);
+                row.appendChild(datasetCell);
+                row.appendChild(modelCell);
+                row.appendChild(accuracyCell);
+                row.appendChild(countsCell);
+                row.appendChild(runIdCell);
+                tbody.appendChild(row);
+            });
+
+            updateComparePanel();
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const result = await response.json();
+                if (result.success) {
+                    displayHistory(result.data);
+                } else {
+                    showError(result.error || 'Failed to load history');
+                }
+            } catch (error) {
+                showError(error.message || 'Network error occurred');
+            }
+        }
+
+        function displayExamples(examples) {
+            const tbody = document.getElementById('examplesTableBody');
+            tbody.innerHTML = '';
+
+            if (!examples.length) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 3;
+                cell.textContent = `No ${currentView.evalType} examples available.`;
+                cell.style.textAlign = 'center';
+                cell.style.padding = '20px';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+
+            examples.forEach(example => {
+                const row = document.createElement('tr');
+
+                const idCell = document.createElement('td');
+                idCell.textContent = example.case_id;
+
+                const promptCell = document.createElement('td');
+                promptCell.className = 'message-cell';
+                promptCell.textContent = example.prompt;
+
+                const expectedCell = document.createElement('td');
+                expectedCell.textContent = example.expected;
+
+                row.appendChild(idCell);
+                row.appendChild(promptCell);
+                row.appendChild(expectedCell);
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadExamples() {
+            const cachedExamples = examplesByType[currentView.evalType];
+            if (cachedExamples) {
+                displayExamples(cachedExamples);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/examples?eval_type=${currentView.evalType}`);
+                const result = await response.json();
+                if (result.success) {
+                    examplesByType[currentView.evalType] = result.data;
+                    displayExamples(result.data);
+                } else {
+                    showError(result.error || 'Failed to load examples');
+                }
+            } catch (error) {
+                showError(error.message || 'Network error occurred');
+            }
+        }
+
         async function runHandoffEval() {
             currentEvalType = 'handoff';
             showLoading();
@@ -364,6 +962,8 @@
 
                 if (result.success) {
                     displayResults(result.data);
+                    setView({ evalType: 'handoff', section: 'results' });
+                    await loadHistory();
                 } else {
                     hideLoading();
                     showError(result.error || 'Failed to run handoff evaluation');
@@ -392,6 +992,8 @@
 
                 if (result.success) {
                     displayResults(result.data);
+                    setView({ evalType: 'tool', section: 'results' });
+                    await loadHistory();
                 } else {
                     hideLoading();
                     showError(result.error || 'Failed to run tool call evaluation');
@@ -401,7 +1003,9 @@
                 showError(error.message || 'Network error occurred');
             }
         }
+
+        setView({ evalType: 'handoff', section: 'results' });
+        loadHistory();
     </script>
 </body>
 </html>
-
