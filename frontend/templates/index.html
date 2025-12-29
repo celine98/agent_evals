@@ -604,6 +604,11 @@
         }
 
         function updateResultsDisplay() {
+            if (currentView.section !== 'results') {
+                document.getElementById('resultsSection').style.display = 'none';
+                return;
+            }
+
             const storedResults = resultsByType[currentView.evalType];
             if (storedResults) {
                 displayResults(storedResults, { persist: false });
